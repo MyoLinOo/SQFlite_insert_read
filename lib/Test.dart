@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -25,11 +27,40 @@ class TestHelper {
     initDatabase();
   }
   Future<void> initDatabase() async {
-    db = await openDatabase(join(await getDatabasesPath(), 'my_db_db'),
-        onCreate: (db, version) {
-      return db.execute(
-          'CREATE TABLE $tableName($column_id AUTO INCREMENT PRIMARY KEY,$column_name TEXT)');
-    }, version: 1);
+    var databasesPath = await getDatabasesPath();
+    var path = join(databasesPath, "my_database.db");
+
+// Check if the database exists
+    var exists = await databaseExists(path);
+
+    if (!exists) {
+      // Should happen only the first time you launch your application
+      print("Creating new copy from asset");
+
+      // Make sure the parent directory exists
+      try {
+        await Directory(dirname(path)).create(recursive: true);
+      } catch (_) {}
+
+      // Copy from asset
+      ByteData data = await rootBundle.load(join("db", "my_database.db"));
+      List<int> bytes =
+          data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+
+      // Write and flush the bytes written
+      await File(path).writeAsBytes(bytes, flush: true);
+    } else {
+      print("Opening existing database");
+    }
+// open the database
+    db = await openDatabase(path, readOnly: true);
+
+    return db;
+    // db = await openDatabase(join(await getDatabasesPath(), 'my_database'),
+    //     onCreate: (db, version) {
+    //   return db.execute(
+    //       'CREATE TABLE $tableName($column_id AUTO INCREMENT PRIMARY KEY,$column_name TEXT)');
+    // }, version: 1);
   }
 
   Future<void> insertTest(Tast test) async {

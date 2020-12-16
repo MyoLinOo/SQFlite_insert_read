@@ -4,7 +4,9 @@ import 'package:myanmar_dica_law_2/List.dart';
 import 'Test.dart';
 
 void main() {
+
   runApp(MyApp());
+
 }
 
 class MyApp extends StatelessWidget {
