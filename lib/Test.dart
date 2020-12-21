@@ -6,16 +6,23 @@ import 'package:path/path.dart';
 final String tableName = 'todo';
 final String column_id = 'id';
 final String column_name = 'name';
+final String column_pdfname = 'pdfname';
+final String colunm_path = 'path';
 
 class Tast {
-  int id;
+  final int id;
   final String name;
+  final String pdfname;
+  final String path;
 
-  Tast({this.id, this.name});
+  Tast({this.id, this.name, this.pdfname, this.path});
 
   Map<String, dynamic> toMap() {
     return {
       column_name: this.name,
+      column_id: this.id,
+      column_pdfname: this.pdfname,
+      colunm_path: this.path,
     };
   }
 }
@@ -26,36 +33,31 @@ class TestHelper {
   TestHelper() {
     initDatabase();
   }
+
   Future<void> initDatabase() async {
     var databasesPath = await getDatabasesPath();
-    var path = join(databasesPath, "my_database.db");
+    var path = join(databasesPath, "your_database.db");
 
-// Check if the database exists
     var exists = await databaseExists(path);
 
     if (!exists) {
-      // Should happen only the first time you launch your application
-      print("Creating new copy from asset");
-
-      // Make sure the parent directory exists
       try {
         await Directory(dirname(path)).create(recursive: true);
-      } catch (_) {}
-
-      // Copy from asset
-      ByteData data = await rootBundle.load(join("db", "my_database.db"));
+      } catch (_) {
+        print(_);
+      }
+      ByteData data = await rootBundle.load(join("db", "m_database.db"));
       List<int> bytes =
           data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-
-      // Write and flush the bytes written
       await File(path).writeAsBytes(bytes, flush: true);
     } else {
       print("Opening existing database");
     }
-// open the database
-    db = await openDatabase(path, readOnly: true);
+
+    db = await openDatabase(path, readOnly: false);
 
     return db;
+
     // db = await openDatabase(join(await getDatabasesPath(), 'my_database'),
     //     onCreate: (db, version) {
     //   return db.execute(
@@ -63,10 +65,11 @@ class TestHelper {
     // }, version: 1);
   }
 
-  Future<void> insertTest(Tast test) async {
+  Future<Tast> insertTest(Tast test) async {
     try {
-      db.insert(tableName, test.toMap(),
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await db.insert(tableName, test.toMap());
+      // conflictAlgorithm: ConflictAlgorithm.replace);
+      return test;
     } catch (e) {
       print(e);
     }
@@ -75,7 +78,12 @@ class TestHelper {
   Future<List<Tast>> getAllTest() async {
     final List<Map<String, dynamic>> tesks = await db.query(tableName);
     return List.generate(tesks.length, (i) {
-      return Tast(id: tesks[i][column_id], name: tesks[i][column_name]);
+      return Tast(
+        id: tesks[i][column_id],
+        name: tesks[i][column_name],
+        pdfname: tesks[i][column_pdfname],
+        path: tesks[i][colunm_path],
+      );
     });
   }
 }
